@@ -22,8 +22,33 @@ app.post('/run', async (req, res) => {
   // You can later add NLP for prompt-to-command mapping
 
   // Use LLM to create a prompt! and send that prompt
+  let command;
+  try {
+    const lmResponse = await fetch('http://localhost:1234/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: "your-model-name", // replace with actual model used in LM Studio
+        messages: [
+          {
+            role: "system",
+            content: "You are an AI that translates user prompts into shell commands. Only respond with the exact shell command without any explanation."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.2
+      })
+    });
 
-  const command = prompt;
+    const lmData = await lmResponse.json();
+    command = lmData.choices[0].message.content.trim();
+    console.log("COMMAND >>>> ", command);
+  } catch (err) {
+    return res.render('index', { output: `Error from LM Studio: ${err.message}` });
+  }
 
   try {
     const response = await fetch('http://localhost:3000/mcp', {
