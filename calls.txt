@@ -1,0 +1,21 @@
+// Regular Call
+curl -X POST http://localhost:3000/run -H "Content-Type: application/json" -d '{"cmd":"ls"}'
+
+
+
+// MCP
+// Call
+curl -X POST http://localhost:3000/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "role": "user",
+    "name": "terminal",
+    "content": {
+      "command": "ls"
+    }
+  }'
+// Response
+{"role":"tool","name":"terminal","content":{"stdout":"calls.txt\nnode_modules\npackage.json\nserver.js\nyarn.lock\n"}}
+
+
+

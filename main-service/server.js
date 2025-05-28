@@ -1,0 +1,50 @@
+const express = require('express');
+const path = require('path');
+const bodyParser = require('body-parser');
+const app = express();
+const PORT = 4000;
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.static(path.join(__dirname, 'public')));
+app.set('view engine', 'ejs');
+
+// Render the form UI
+app.get('/', (req, res) => {
+  res.render('index', { output: null });
+});
+
+// Handle form submission
+app.post('/run', async (req, res) => {
+  const prompt = req.body.prompt;
+
+  // Translate user prompt to command — naive version
+
+  // You can later add NLP for prompt-to-command mapping
+
+  // Use LLM to create a prompt! and send that prompt
+
+  const command = prompt;
+
+  try {
+    const response = await fetch('http://localhost:3000/mcp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        role: "user",
+        name: "terminal",
+        content: { command }
+      })
+    });
+
+    const data = await response.json();
+    const output = data.content.stdout || data.content.stderr || data.content.error || "No output";
+
+    res.render('index', { output });
+  } catch (err) {
+    res.render('index', { output: 'Error contacting MCP server: ' + err.message });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Main Service running at http://localhost:${PORT}`);
+});

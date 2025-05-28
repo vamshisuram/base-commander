@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Main Service UI</title>
+</head>
+
+<body>
+  <h1>Terminal Prompt via MCP</h1>
+  <form method="POST" action="/run">
+    <label for="prompt">Enter prompt:</label><br>
+    <input type="text" id="prompt" name="prompt" required style="width: 300px;"><br><br>
+    <button type="submit">Execute</button>
+  </form>
+
+  <% if (output) { %>
+    <h2>Output</h2>
+    <pre><%= output %></pre>
+    <% } %>
+</body>
+
+</html>
