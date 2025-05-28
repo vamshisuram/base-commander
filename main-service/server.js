@@ -14,28 +14,25 @@ app.get('/', (req, res) => {
 });
 
 // Handle form submission
+
 app.post('/run', async (req, res) => {
   const prompt = req.body.prompt;
+  let tool, input;
 
-  // Translate user prompt to command — naive version
-
-  // You can later add NLP for prompt-to-command mapping
-
-  // Use LLM to create a prompt! and send that prompt
-  let command;
   try {
+    // Step 1: Ask LM Studio to determine tool + input
     const lmResponse = await fetch('http://localhost:1234/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: "your-model-name", // replace with actual model used in LM Studio
+        model: 'your-model',
         messages: [
           {
-            role: "system",
-            content: "You are an AI that translates user prompts into shell commands. Only respond with the exact shell command without any explanation."
+            role: 'system',
+            content: 'You are a router AI. Given a user prompt, decide which tool to call and with what input. Tools: terminal, db, log. Respond only with JSON: { "tool": "terminal", "input": { "command": "ls ~" } }'
           },
           {
-            role: "user",
+            role: 'user',
             content: prompt
           }
         ],
@@ -44,29 +41,30 @@ app.post('/run', async (req, res) => {
     });
 
     const lmData = await lmResponse.json();
-    command = lmData.choices[0].message.content.trim();
-    console.log("COMMAND >>>> ", command);
+    const routerResponse = JSON.parse(lmData.choices[0].message.content);
+    tool = routerResponse.tool;
+    input = routerResponse.input;
+
   } catch (err) {
-    return res.render('index', { output: `Error from LM Studio: ${err.message}` });
+    return err;
+    // return res.render('index', { output: `LM Studio error: ${err.message}` });
   }
 
   try {
-    const response = await fetch('http://localhost:3000/mcp', {
+    // Step 2: Call the routed MCP endpoint
+    const body = JSON.stringify({ role: 'user', name: tool, content: input });
+    console.log("BODY>>>", body);
+    const mcpRes = await fetch(`http://localhost:3000/mcp/${tool}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        role: "user",
-        name: "terminal",
-        content: { command }
-      })
+      body
     });
 
-    const data = await response.json();
-    const output = data.content.stdout || data.content.stderr || data.content.error || "No output";
-
-    res.render('index', { output });
+    const mcpData = await mcpRes.json();
+    res.render('index', { output: JSON.stringify(mcpData, null, 2) });
   } catch (err) {
-    res.render('index', { output: 'Error contacting MCP server: ' + err.message });
+    return err;
+    res.render('index', { output: `MCP error: ${err.message}` });
   }
 });
 

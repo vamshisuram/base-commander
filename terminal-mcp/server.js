@@ -1,3 +1,4 @@
+const fs = require('fs');
 const express = require('express');
 const { exec } = require('child_process');
 const app = express();
@@ -20,36 +21,49 @@ app.post('/run', (req, res) => {
 });
 
 // POST endpoint for MCP-style requests
-app.post('/mcp', (req, res) => {
-  const message = req.body;
-
-  // Basic MCP format validation
-  if (!message || message.role !== 'user' || !message.content?.command) {
-    return res.status(400).json({
-      role: "tool",
-      name: "terminal",
-      content: { error: "Invalid MCP format. Expected 'command' inside 'content'." }
-    });
-  }
-
-  const command = message.content.command;
+// Terminal command runner
+app.post('/mcp/terminal', (req, res) => {
+  console.log("MCP request body >>> ", req.body);
+  const command = req.body.content?.command;
+  if (!command) return res.status(400).json({ error: 'Missing command' });
 
   exec(command, (error, stdout, stderr) => {
-    let responseContent = {};
-
-    if (error) {
-      responseContent.error = error.message;
-    } else if (stderr) {
-      responseContent.stderr = stderr;
-    } else {
-      responseContent.stdout = stdout;
-    }
-
     res.json({
-      role: "tool",
-      name: "terminal",
-      content: responseContent
+      role: 'assistant',
+      name: 'terminal',
+      content: {
+        stdout,
+        stderr,
+        error: error?.message
+      }
     });
+  });
+});
+
+// Simple SQL-like database simulation
+app.post('/mcp/db', (req, res) => {
+  console.log("MCP request body >>> ", req.body);
+  const query = req.body.content?.query;
+  if (!query) return res.status(400).json({ error: 'Missing query' });
+
+  // Fake in-memory DB example
+  const fakeUsers = [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }];
+  if (query.toLowerCase().includes('select')) {
+    return res.json({ content: fakeUsers });
+  }
+
+  res.status(400).json({ error: 'Unsupported query' });
+});
+
+// Log prompt
+app.post('/mcp/log', (req, res) => {
+  console.log("MCP request body >>> ", req.body);
+  const prompt = req.body.content?.message;
+  if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
+
+  fs.appendFile('logs.txt', `${new Date().toISOString()} - ${prompt}\n`, (err) => {
+    if (err) return res.status(500).json({ error: 'Failed to log' });
+    res.json({ status: 'logged' });
   });
 });
 
