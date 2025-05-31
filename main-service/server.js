@@ -36,10 +36,12 @@ const getSystemPrompt = () => {
     Available tools and their payload schema
     ${toolList}
     ---
-    Return only json. Sample json outputs for different tools are below:
-    For terminal - { "tool": "terminal", "input": { "command": "ls" } }
-    For log -  { "tool": "log", "input": { "message": "good day" } }
-    For db - { "tool": "db", "input": { "query": "select * from users;" } }
+    Example outputs for different tools are below:
+    For terminal - return this format { "tool": "terminal", "input": { "command": "..." } }
+    For log -  return  { "tool": "log", "input": { "message": "..." } }
+    For db - return { "tool": "db", "input": { "query": "..." } }
+    ---
+    The downstream service will take this data and parse to JSON. So ensure you give only that data which can be parsed.
     `;
 
   return systemPrompt;
@@ -103,7 +105,8 @@ app.post('/run', async (req, res) => {
     });
 
     const mcpData = await mcpRes.json();
-    res.render('index', { output: JSON.stringify(mcpData, null, 2) });
+    const output = mcpData.content.stdout;
+    res.render('index', { output });
   } catch (err) {
     return err;
     res.render('index', { output: `MCP error: ${err.message}` });
