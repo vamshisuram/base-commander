@@ -7,17 +7,42 @@
 </head>
 
 <body>
-  <h1>Terminal Prompt via MCP</h1>
-  <form method="POST" action="/run">
-    <label for="prompt">Enter prompt:</label><br>
-    <input type="text" id="prompt" name="prompt" required style="width: 300px;"><br><br>
-    <button type="submit">Execute</button>
-  </form>
 
-  <% if (output) { %>
-    <h2>Output</h2>
-    <pre><%= output %></pre>
-    <% } %>
+  <style>
+    body {
+      .container {
+        width: 800px;
+        margin: 0 auto;
+
+        label {
+          font-size: 18px;
+        }
+
+        textarea {
+          display: block;
+          width: 100%;
+          font-size: 16px;
+          height: 250px;
+          margin: 20px 0;
+        }
+      }
+    }
+  </style>
+
+  <div class="container">
+    <h1>Base Commander</h1>
+    <form method="POST" action="/run">
+      <label for="prompt">Enter prompt:</label>
+      <textarea type="text" id="prompt" name="prompt"></textarea>
+      <button type="submit">Execute</button>
+    </form>
+
+    <% if (output) { %>
+      <h2>Output</h2>
+      <pre><%= output %></pre>
+      <% } %>
+  </div>
+
 </body>
 
 </html>

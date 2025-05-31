@@ -13,10 +13,42 @@ app.get('/', (req, res) => {
   res.render('index', { output: null });
 });
 
-// Handle form submission
+let toolRegistry = [];
 
+async function fetchToolRegistry() {
+  try {
+    const res = await fetch('http://localhost:3000/mcp/registry');
+    const data = await res.json();
+    toolRegistry = data.tools;
+    console.log("Tool registry loaded:", toolRegistry.map(t => t.name).join(", "));
+  } catch (err) {
+    console.error("Failed to fetch tool registry:", err.message);
+  }
+}
+
+fetchToolRegistry();
+
+const getSystemPrompt = () => {
+  const toolList = toolRegistry.map(t => `- ${t.name}: ${t.description}`).join("\n");
+
+  const systemPrompt = `
+    You are a router AI that selects the best tool and input for a given user prompt.
+    Available tools and their payload schema
+    ${toolList}
+    ---
+    Return only json. Sample json outputs for different tools are below:
+    For terminal - { "tool": "terminal", "input": { "command": "ls" } }
+    For log -  { "tool": "log", "input": { "message": "good day" } }
+    For db - { "tool": "db", "input": { "query": "select * from users;" } }
+    `;
+
+  return systemPrompt;
+}
+
+// Handle form submission
 app.post('/run', async (req, res) => {
   const prompt = req.body.prompt;
+  console.log("PROMPT>>>>", prompt);
   let tool, input;
 
   try {
@@ -29,7 +61,9 @@ app.post('/run', async (req, res) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a router AI. Given a user prompt, decide which tool to call and with what input. Tools: terminal, db, log. Respond only with JSON: { "tool": "terminal", "input": { "command": "ls ~" } }'
+            content: getSystemPrompt(),
+
+            // 'You are a router AI. Given a user prompt, decide which tool to call and with what input. Tools: terminal, db, log. Respond only with JSON: { "tool": "terminal", "input": { "command": "ls ~" } }'
           },
           {
             role: 'user',
@@ -41,13 +75,21 @@ app.post('/run', async (req, res) => {
     });
 
     const lmData = await lmResponse.json();
-    const routerResponse = JSON.parse(lmData.choices[0].message.content);
+    console.log("lmData:::", lmData);
+    console.log("lmData.choices[0].message.content:::", lmData.choices[0].message.content);
+
+    let routerResponse;
+    try {
+      routerResponse = JSON.parse(lmData.choices[0].message.content);
+    } catch (e) {
+      console.log("Parsing ERROR:::", e.message);
+    }
+
     tool = routerResponse.tool;
     input = routerResponse.input;
 
   } catch (err) {
-    return err;
-    // return res.render('index', { output: `LM Studio error: ${err.message}` });
+    return res.render('index', { output: `LM Studio error: ${err.message}` });
   }
 
   try {

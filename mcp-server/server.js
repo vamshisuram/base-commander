@@ -57,7 +57,9 @@ app.post('/mcp/db', (req, res) => {
 
 // Log prompt
 app.post('/mcp/log', (req, res) => {
+
   console.log("MCP request body >>> ", req.body);
+
   const prompt = req.body.content?.message;
   if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
 
@@ -65,6 +67,47 @@ app.post('/mcp/log', (req, res) => {
     if (err) return res.status(500).json({ error: 'Failed to log' });
     res.json({ status: 'logged' });
   });
+});
+
+// Inside MCP server
+const toolRegistry = [
+  {
+    name: "terminal",
+    description: "Runs terminal shell commands",
+    inputSchema: {
+      type: "object",
+      properties: {
+        command: { type: "string", description: "Shell command to run" }
+      },
+      required: ["command"]
+    }
+  },
+  {
+    name: "db",
+    description: "Executes SQL-like queries on an in-memory database",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "SQL query" }
+      },
+      required: ["query"]
+    }
+  },
+  {
+    name: "log",
+    description: "Stores a prompt for future reference",
+    inputSchema: {
+      type: "object",
+      properties: {
+        message: { type: "string", description: "message to store" }
+      },
+      required: ["message"]
+    }
+  }
+];
+
+app.get('/mcp/registry', (req, res) => {
+  res.json({ tools: toolRegistry });
 });
 
 app.listen(PORT, () => {
